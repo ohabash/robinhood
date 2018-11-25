@@ -27,9 +27,10 @@ MongoClient.connect(url, params, function(err, client) {
   assert.equal(null, err);
   console.log(`Connected to ${dbName} successfully on ${url}`.magenta);
   db = client.db(dbName);
-  // findDocuments(db);
+
+  // readDB(db);
   // getAndSave( client );
-  // saveDataOninterval(3000, client);
+  saveDataOninterval(3000, client);
   
 });
 
@@ -51,7 +52,7 @@ const getAndSave = (dbClient) => {
 	        const data = [Object.assign({stamp:Date.now()}, {data:body.results})];
 	        // const data = body.results;
 	        save_data( data, 'quote_data', result => {
-	        	console.log(`Inserted: `.magenta, `${result.ops[0]._id}`.bgMagenta.black.bold);
+	        	console.log(`Inserted: `.yellow, `${result.ops[0]._id}`.bgYellow.black.bold);
 	        });
 			// dbClient.close();
 	    });
@@ -82,7 +83,7 @@ const save_data = (data, locName, callback) => {
 
 
 
-const findDocuments = (callback) => {
+const readDB = (callback) => {
   // Get the documents collection
   const collection = db.collection('quote_data');
   // Find some documents
