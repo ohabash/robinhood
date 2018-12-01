@@ -24,42 +24,51 @@ let db;
 
 // Connect to database
 MongoClient.connect(url, params, function(err, client) {
-  assert.equal(null, err);
-  console.log(`Connected to ${dbName} successfully on ${url}`.magenta);
-  db = client.db(dbName);
+	assert.equal(null, err);
+	console.log(`Connected to ${dbName} successfully on ${url}`.magenta);
+	db = client.db(dbName);
 
-  // readDB(db);
-  // getAndSave( client );
-  saveDataOninterval(3000, client);
-  
+	// readDB('quote_data', db, (data) => handleQuoteData(data));
+	init(client);
 });
 
 
 
+const handleQuoteData = (data) => {
+	console.log(`quote_data: ${pretty(data)}`.bgCyan.black.bold);
+}
 
 // Robinhood
-const getAndSave = (dbClient) => {
+const init = (dbClient, interval) => {
 	// const quote_data = db.collection('documents');
 	const credentials = require("./credentials.js");
 	const Robinhood = require('robinhood')(credentials, ()=> {
-	const token = Robinhood.auth_token();
-	// console.log(`Robinhood Token: ${token}`.underline.magenta);
+		const token = Robinhood.auth_token();
 
-		// get quote_data
-	    Robinhood.quote_data('GOOG', function(error, response, body) {
-	        if (error) { err(error); }
-	        // console.log(' quote_data => '.inverse, body.results);
-	        const data = [Object.assign({stamp:Date.now()}, {data:body.results})];
-	        // const data = body.results;
-	        save_data( data, 'quote_data', result => {
-	        	console.log(`Inserted: `.yellow, `${result.ops[0]._id}`.bgYellow.black.bold);
-	        });
-			// dbClient.close();
-	    });
+	    if(interval) {
+	    	setInterval( e=> {getAndSave(Robinhood) }, interval);
+	    }else {
+	    	getAndSave(Robinhood);
+	    }
 
 	});
 }
 
+
+// get quote_data
+const getAndSave = (Robinhood) => {
+    Robinhood.quote_data('GOOG', function(error, response, body) {
+        if (error) { err(error); }
+        if (body === undefined) {err('body undefined');return false}
+        // console.log(' quote_data => '.inverse, body.results);
+        const data = [Object.assign({stamp:Date.now()}, {data:body.results})];
+        // const data = body.results;
+        save_data( data, 'quote_data', result => {
+        	console.log(`Inserted: `.yellow, `${result.ops[0]._id}`.bgYellow.black.bold);
+        });
+		// dbClient.close();
+    });
+}
 
 const saveDataOninterval = (interval, client) => {
 	setInterval( e=> {
@@ -83,15 +92,13 @@ const save_data = (data, locName, callback) => {
 
 
 
-const readDB = (callback) => {
+const readDB = (query ,db, callback) => {
   // Get the documents collection
-  const collection = db.collection('quote_data');
+  const collection = db.collection(query);
   // Find some documents
   collection.find({}).toArray(function(err, docs) {
     assert.equal(err, null);
-    console.log("Found the following records".inverse);
-    console.log(docs)
-    // callback(docs);
+    callback(docs);
   });
 }
 
@@ -103,7 +110,9 @@ const err = (error) => {
 
 
 
-
+function pretty(obj) {
+    return JSON.stringify(obj, null, 2)
+}
 
 
 
